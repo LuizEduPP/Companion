@@ -855,13 +855,18 @@ export function createAvatarController({ bloom, body, face, orbRoot, j0, j1, j2 
     bloom.setAttribute("fill", hsl(hue, 92, L + 8));
   }
 
+  let lastTickMs = 0;
   function tick(now) {
+    const dtSec = lastTickMs
+      ? Math.min(0.05, Math.max(0.001, (now - lastTickMs) / 1000))
+      : 1 / 60;
+    lastTickMs = now;
     const t = now / 1000;
     const local = t - emotionSince;
     const e = EMOTIONS[active] || EMOTIONS.idle;
-    // Slow morph toward new emotion (~2.4s face crossfade).
-    const ease = 1 - Math.exp(-0.42 * (1 / 60));
-    faceBlend = Math.min(1, faceBlend + 1 / 60 / 2.4);
+    // Time-based morph (~2.4s face crossfade), independent of refresh rate.
+    const ease = 1 - Math.exp(-0.42 * dtSec * 60);
+    faceBlend = Math.min(1, faceBlend + dtSec / 2.4);
 
     for (const k of KEYS) {
       if (k === "eye_l" || k === "eye_r") continue;

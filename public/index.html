@@ -200,22 +200,46 @@
     hit.addEventListener("pointercancel", endPress);
 
     api?.setBalloon?.(false);
-    setInterval(poll, 400);
-    poll();
-    requestAnimationFrame(frame);
+    let pollMs = 400;
+    let hotMs = 800;
+    let pollTimer = null;
+    let hotTimer = null;
+
+    async function pollLoop() {
+      await poll();
+      pollTimer = setTimeout(pollLoop, pollMs);
+    }
 
     // Hot reload: brain bumps /api/health.reload when public/ changes.
     let reloadToken = null;
-    setInterval(async () => {
+    async function hotLoop() {
       try {
         const res = await fetch("/api/health", { cache: "no-store" });
-        if (!res.ok) return;
-        const h = await res.json();
-        if (h.reload == null) return;
-        if (reloadToken == null) reloadToken = h.reload;
-        else if (h.reload !== reloadToken) location.reload();
+        if (res.ok) {
+          const h = await res.json();
+          if (h.reload != null) {
+            if (reloadToken == null) reloadToken = h.reload;
+            else if (h.reload !== reloadToken) location.reload();
+          }
+        }
       } catch { /* offline during brain restart */ }
-    }, 800);
+      hotTimer = setTimeout(hotLoop, hotMs);
+    }
+
+    // First poll seeds intervals from env-backed ui payload.
+    (async () => {
+      try {
+        const res = await fetch("/api/pc/ui", { cache: "no-store" });
+        if (res.ok) {
+          const u = await res.json();
+          if (u.ui_poll_ms > 0) pollMs = u.ui_poll_ms;
+          if (u.hot_reload_poll_ms > 0) hotMs = u.hot_reload_poll_ms;
+        }
+      } catch { /* use defaults until server up */ }
+      pollLoop();
+      hotLoop();
+    })();
+    requestAnimationFrame(frame);
   </script>
 </body>
 </html>
