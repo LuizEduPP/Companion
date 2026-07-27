@@ -1,6 +1,5 @@
 /** Canonical port of keeper/cyd/design/avatar-preview.html
- *  Emotions: idle,listening,thinking,speak,focused,happy,laugh,excited,wink,smug,
- *            love,shy,curious,sad,tired,sleepy,annoyed,angry,disgust,confused,scared,surprised
+ *  Emotion keys must match lib/brain.mjs EMOTIONS.
  *  Keep loops + drawFace signatures (♥ zzzz tear sweat ?) in sync with that file.
  */
 const NS = "http://www.w3.org/2000/svg";
@@ -13,11 +12,13 @@ const hsl = (h, s, l, a = 1) => `hsla(${h},${s}%,${l}%,${a})`;
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 const lerp = (a, b, t) => a + (b - a) * t;
 const el = (name, attrs = {}) => {
-      const n = document.createElementNS(NS, name);
-      for (const [k, v] of Object.entries(attrs)) n.setAttribute(k, String(v));
-      return n;
+  const n = document.createElementNS(NS, name);
+  for (const [k, v] of Object.entries(attrs)) n.setAttribute(k, String(v));
+  return n;
 };
-const clear = (n) => { while (n.firstChild) n.removeChild(n.firstChild); };
+const clear = (n) => {
+  while (n.firstChild) n.removeChild(n.firstChild);
+};
 
 function blobPath(cx, cy, rx, ry, t, energy, squash) {
       const n = 36;
@@ -510,6 +511,9 @@ const EMOTIONS = {
         },
       },
 };
+
+/** Keys must stay aligned with lib/brain.mjs EMOTIONS. */
+export const EMOTION_NAMES = Object.freeze(Object.keys(EMOTIONS));
 
 function heartPath(cx, cy, s) {
       // Classic ♥ (Material-like), visual center at (cx, cy)

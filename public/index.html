@@ -6,7 +6,11 @@
   <title>Companion Orb</title>
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600&family=Syne:wght@700;800&display=swap" rel="stylesheet" />
   <style>
-    :root { --ink: #1a1008; }
+    :root {
+      --ink: #1a1008;
+      --orb-w: 240px;
+      --orb-h: 180px;
+    }
     * { box-sizing: border-box; margin: 0; padding: 0; }
     html, body {
       width: 100%;
@@ -48,9 +52,9 @@
     .balloon.show { display: block; }
     /* Room for glow + zzzz/?/sweat — click circle via Electron hit-test */
     .hit {
-      width: 240px;
-      height: 180px;
-      flex: 0 0 180px;
+      width: var(--orb-w);
+      height: var(--orb-h);
+      flex: 0 0 var(--orb-h);
       margin: 0 auto;
       pointer-events: auto;
       cursor: grab;
@@ -60,8 +64,8 @@
     }
     .hit:active { cursor: grabbing; }
     .hit svg {
-      width: 240px;
-      height: 180px;
+      width: var(--orb-w);
+      height: var(--orb-h);
       display: block;
       pointer-events: none;
       overflow: visible;

@@ -20,6 +20,7 @@ import { arch, homedir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createRequire } from "node:module";
+import { envFlag, ORB, orbTitle } from "./lib/sense/util.mjs";
 
 const ROOT = dirname(fileURLToPath(import.meta.url));
 const SELF = join(ROOT, "run.mjs");
@@ -31,9 +32,7 @@ const isMac = process.platform === "darwin";
 /* ─── hot reload helpers ─── */
 
 function hotEnabled() {
-  const v = process.env.COMPANION_HOT_RELOAD;
-  if (v === undefined || v === "") return true;
-  return ["1", "true", "yes", "on"].includes(String(v).toLowerCase());
+  return envFlag("COMPANION_HOT_RELOAD", true);
 }
 
 function shouldSkip(name) {
@@ -312,12 +311,7 @@ function runOrbLauncher() {
   // Wayland: setIgnoreMouseEvents + cursor hit-test is unreliable (scale /
   // forward). X11 ozone restores click, drag, and click-through.
   const orbArgs = ["--enable-transparent-visuals"];
-  if (
-    process.platform === "linux" &&
-    !["0", "false", "no", "off"].includes(
-      String(process.env.COMPANION_ORB_X11 ?? "1").toLowerCase(),
-    )
-  ) {
+  if (process.platform === "linux" && envFlag("COMPANION_ORB_X11", true)) {
     orbArgs.push("--ozone-platform=x11");
   }
   orbArgs.push(SELF);
@@ -339,9 +333,10 @@ async function runOrbMain() {
 
   const PORT = readCompanionPort(ROOT);
   const URL = `http://127.0.0.1:${PORT}/`;
-  const ORB_W = 240;
-  const ORB_H = 180;
-  const BALLOON_H = 72;
+  const ORB_W = ORB.width;
+  const ORB_H = ORB.height;
+  const BALLOON_H = ORB.balloonHeight;
+  const title = orbTitle();
 
   function cursorInWindowSpace(win, point) {
     // Match cursor + window bounds in DIP space when fractional scale differs.
@@ -378,10 +373,7 @@ async function runOrbMain() {
     // Linux/XWayland: setIgnoreMouseEvents + transparent pixels often drop
     // all input (can't drag / can't nudge). Keep the window fully interactive.
     const clickThrough =
-      process.platform !== "linux" &&
-      !["0", "false", "no", "off"].includes(
-        String(process.env.COMPANION_ORB_CLICK_THROUGH ?? "1").toLowerCase(),
-      );
+      process.platform !== "linux" && envFlag("COMPANION_ORB_CLICK_THROUGH", true);
     console.log(
       `[orb] size=${ORB_W}x${ORB_H} platform=${process.platform} ozone=${ozone} clickThrough=${clickThrough}`,
     );
@@ -415,7 +407,7 @@ async function runOrbMain() {
       fullscreenable: false,
       focusable: true,
       show: false,
-      title: "Companion Orb",
+      title,
       backgroundColor: "#00000000",
       webPreferences: {
         preload: PRELOAD,

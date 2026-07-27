@@ -10,9 +10,7 @@ import {
   startBrain,
 } from "./lib/brain.mjs";
 
-const HOT = !["0", "false", "no", "off"].includes(
-  String(process.env.COMPANION_HOT_RELOAD ?? "1").toLowerCase(),
-);
+const HOT = config.hotReload;
 
 /** Bumped when public/ changes so the orb page can location.reload(). */
 let reloadToken = Date.now();
