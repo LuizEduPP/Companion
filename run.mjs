@@ -21,7 +21,6 @@ import { arch, homedir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createRequire } from "node:module";
-import { envFlag, requireFlag } from "./lib/sense/util.mjs";
 
 const ROOT = dirname(fileURLToPath(import.meta.url));
 const SELF = join(ROOT, "run.mjs");
