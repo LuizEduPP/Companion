@@ -1,0 +1,16 @@
+{
+  "name": "companion",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "postinstall": "node run.mjs electron-ensure",
+    "start": "node run.mjs",
+    "all": "node run.mjs"
+  },
+  "dependencies": {
+    "electron": "^37.2.0"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

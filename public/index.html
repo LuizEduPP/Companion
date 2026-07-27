@@ -1,0 +1,199 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Companion Orb</title>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600&family=Syne:wght@700;800&display=swap" rel="stylesheet" />
+  <style>
+    :root { --ink: #1a1008; }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: transparent !important;
+      font-family: "Outfit", "Segoe UI", system-ui, sans-serif;
+      user-select: none;
+      cursor: default;
+      -webkit-app-region: no-drag;
+    }
+    .stage {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: stretch;
+      justify-content: flex-end;
+      background: transparent;
+      pointer-events: none;
+    }
+    .balloon {
+      flex: 0 0 auto;
+      margin: 0 8px 2px;
+      max-height: 68px;
+      padding: 0.4rem 0.55rem;
+      border-radius: 12px;
+      background: rgba(255, 248, 238, 0.94);
+      color: var(--ink);
+      font-size: 0.72rem;
+      line-height: 1.3;
+      font-weight: 550;
+      box-shadow: 0 6px 18px rgba(0,0,0,0.3);
+      display: none;
+      pointer-events: auto;
+      cursor: default;
+      overflow: hidden;
+    }
+    .balloon.show { display: block; }
+    /* Room for glow + zzzz/?/sweat — click circle via Electron hit-test */
+    .hit {
+      width: 240px;
+      height: 180px;
+      flex: 0 0 180px;
+      margin: 0 auto;
+      pointer-events: auto;
+      cursor: grab;
+      -webkit-app-region: no-drag;
+      overflow: visible;
+      background: transparent;
+    }
+    .hit:active { cursor: grabbing; }
+    .hit svg {
+      width: 240px;
+      height: 180px;
+      display: block;
+      pointer-events: none;
+      overflow: visible;
+    }
+  </style>
+</head>
+<body>
+  <div class="stage" id="stage">
+    <div class="balloon" id="balloon"></div>
+    <div class="hit" id="hit" title="arrastar · clique = nudge">
+      <!-- Same stage coords as keeper/cyd/design/avatar-preview.html (320×240). -->
+      <svg viewBox="0 0 320 240" xmlns="http://www.w3.org/2000/svg" aria-label="Companion orb">
+        <defs>
+          <radialGradient id="jelly" cx="36%" cy="30%" r="70%">
+            <stop id="j0" offset="0%" stop-color="#ffe2b0"/>
+            <stop id="j1" offset="48%" stop-color="#ffb45c"/>
+            <stop id="j2" offset="100%" stop-color="#e07830"/>
+          </radialGradient>
+          <filter id="softGlow" x="-55%" y="-55%" width="210%" height="210%">
+            <feGaussianBlur stdDeviation="12" result="b"/>
+            <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+          </filter>
+        </defs>
+        <ellipse cx="160" cy="204" rx="78" ry="9" fill="#000" opacity=".42"/>
+        <g id="orbRoot" filter="url(#softGlow)">
+          <path id="bloom" opacity=".38"/>
+          <path id="body" fill="url(#jelly)"/>
+          <g id="face"></g>
+        </g>
+      </svg>
+    </div>
+  </div>
+  <script type="module">
+    import { createAvatarController } from "./avatar-engine.js";
+
+    const api = window.companionOrb;
+    const avatar = createAvatarController({
+      bloom: document.getElementById("bloom"),
+      body: document.getElementById("body"),
+      face: document.getElementById("face"),
+      orbRoot: document.getElementById("orbRoot"),
+      j0: document.getElementById("j0"),
+      j1: document.getElementById("j1"),
+      j2: document.getElementById("j2"),
+    });
+
+    let lastEmotion = "idle";
+
+    async function poll() {
+      try {
+        const res = await fetch("/api/pc/ui", { cache: "no-store" });
+        if (!res.ok) return;
+        const u = await res.json();
+        const emotion = u.emotion || "idle";
+        if (emotion !== lastEmotion) {
+          lastEmotion = emotion;
+          avatar.setEmotion(emotion);
+        }
+        const balloon = document.getElementById("balloon");
+        const text = (u.balloon || "").trim();
+        balloon.textContent = text;
+        balloon.classList.toggle("show", Boolean(text));
+        api?.setBalloon?.(Boolean(text));
+      } catch { /* offline */ }
+    }
+
+    function frame(now) {
+      avatar.tick(now);
+      requestAnimationFrame(frame);
+    }
+
+    const hit = document.getElementById("hit");
+    let press = null;
+
+    hit.addEventListener("pointerdown", (e) => {
+      e.preventDefault();
+      api?.arm?.();
+      press = {
+        x: e.screenX,
+        y: e.screenY,
+        ox: e.offsetX,
+        oy: e.offsetY,
+        dragged: false,
+      };
+      try {
+        hit.setPointerCapture(e.pointerId);
+      } catch { /* ignore */ }
+    });
+
+    hit.addEventListener("pointermove", (e) => {
+      if (!press) return;
+      const dx = e.screenX - press.x;
+      const dy = e.screenY - press.y;
+      if (!press.dragged && dx * dx + dy * dy > 16) press.dragged = true;
+      if (press.dragged) api?.drag?.(e.screenX, e.screenY, press.ox, press.oy);
+    });
+
+    function endPress(e) {
+      if (!press) return;
+      const wasDrag = press.dragged;
+      press = null;
+      api?.dragEnd?.();
+      if (!wasDrag) {
+        fetch("/api/pc/nudge", { method: "POST" }).catch(() => {});
+      }
+      if (e?.pointerId != null) {
+        try {
+          hit.releasePointerCapture(e.pointerId);
+        } catch { /* ignore */ }
+      }
+    }
+
+    hit.addEventListener("pointerup", endPress);
+    hit.addEventListener("pointercancel", endPress);
+
+    api?.setBalloon?.(false);
+    setInterval(poll, 400);
+    poll();
+    requestAnimationFrame(frame);
+
+    // Hot reload: brain bumps /api/health.reload when public/ changes.
+    let reloadToken = null;
+    setInterval(async () => {
+      try {
+        const res = await fetch("/api/health", { cache: "no-store" });
+        if (!res.ok) return;
+        const h = await res.json();
+        if (h.reload == null) return;
+        if (reloadToken == null) reloadToken = h.reload;
+        else if (h.reload !== reloadToken) location.reload();
+      } catch { /* offline during brain restart */ }
+    }, 800);
+  </script>
+</body>
+</html>
