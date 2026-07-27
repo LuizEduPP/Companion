@@ -3,10 +3,10 @@ import { createReadStream, existsSync, statSync, watch } from "node:fs";
 import { extname, join, normalize } from "node:path";
 import { config } from "./lib/config.mjs";
 import {
-  brainStatus,
-  enqueueNudge,
+  getStatus,
   getUiState,
   noteActivity,
+  nudge,
   startBrain,
 } from "./lib/brain.mjs";
 
@@ -73,7 +73,7 @@ const server = createServer(async (req, res) => {
         model: config.chatModel,
         hot: HOT,
         reload: reloadToken,
-        brain: brainStatus(),
+        brain: getStatus(),
       });
     }
 
@@ -88,7 +88,7 @@ const server = createServer(async (req, res) => {
     }
 
     if (req.method === "POST" && pathname === "/api/pc/nudge") {
-      enqueueNudge();
+      nudge();
       return json(res, 200, { ok: true });
     }
 

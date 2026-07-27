@@ -1,7 +1,8 @@
 #!/usr/bin/env node
 /**
  * Companion — single entry.
- *   node run.mjs              # brain + sense + orb (hot reload)
+ *   node run.mjs              # brain + sense + orb
+ *   node run.mjs --hot        # same + file watchers
  *   node run.mjs brain|sense|orb|electron-ensure
  * Electron loads this same file as the orb main process.
  */
@@ -29,14 +30,13 @@ const require = createRequire(join(ROOT, "package.json"));
 const isWin = process.platform === "win32";
 const isMac = process.platform === "darwin";
 
+/** Sense OS poll interval — I/O loop, not speech policy. */
+const SENSE_POLL_MS = 1500;
+
 /* ─── hot reload helpers ─── */
 
 function hotEnabled() {
-  // Soft path before full config: if unset, treat as on only when .env not loaded yet.
-  if (process.env.COMPANION_HOT_RELOAD === undefined || process.env.COMPANION_HOT_RELOAD === "") {
-    return envFlag("COMPANION_HOT_RELOAD", true);
-  }
-  return requireFlag("COMPANION_HOT_RELOAD");
+  return process.argv.includes("--hot");
 }
 
 function shouldSkip(name) {
@@ -271,26 +271,16 @@ async function runSense() {
   }
 
   async function tick() {
-    const activity = await collectActivity({
-      onTypedFlush: (typed) => {
-        void postActivity({
-          at: new Date().toISOString(),
-          platform: process.platform,
-          typed,
-        }).catch((err) => console.error("[sense:typed]", err.message));
-      },
-    });
+    const activity = await collectActivity();
     if (activity.focus?.skip) return;
     await postActivity(activity);
   }
 
-  console.log(
-    `companion sense → ${base} every ${config.senseIntervalMs}ms · capture=${config.captureAll ? "all" : "off"}`,
-  );
+  console.log(`companion sense → ${base} every ${SENSE_POLL_MS}ms`);
   await tick();
   setInterval(() => {
     void tick().catch((err) => console.error("[sense]", err.message));
-  }, config.senseIntervalMs);
+  }, SENSE_POLL_MS);
 }
 
 /* ─── orb launcher (node → electron) ─── */
@@ -316,7 +306,7 @@ async function runOrbLauncher() {
   // Wayland: setIgnoreMouseEvents + cursor hit-test is unreliable (scale /
   // forward). X11 ozone restores click, drag, and click-through.
   const orbArgs = ["--enable-transparent-visuals"];
-  if (process.platform === "linux" && config.orbX11) {
+  if (process.platform === "linux") {
     orbArgs.push("--ozone-platform=x11");
   }
   orbArgs.push(SELF);
@@ -336,7 +326,7 @@ async function runOrbMain() {
 
   app.commandLine.appendSwitch("enable-transparent-visuals");
 
-  const PORT = readCompanionPort(ROOT);
+  const PORT = readCompanionPort();
   const URL = `http://127.0.0.1:${PORT}/`;
   const ORB_W = config.orb.width;
   const ORB_H = config.orb.height;
@@ -377,8 +367,7 @@ async function runOrbMain() {
         : process.env.XDG_SESSION_TYPE || "default";
     // Linux/XWayland: setIgnoreMouseEvents + transparent pixels often drop
     // all input (can't drag / can't nudge). Keep the window fully interactive.
-    const clickThrough =
-      process.platform !== "linux" && config.orbClickThrough;
+    const clickThrough = process.platform !== "linux";
     console.log(
       `[orb] size=${ORB_W}x${ORB_H} platform=${process.platform} ozone=${ozone} clickThrough=${clickThrough}`,
     );
@@ -539,7 +528,7 @@ async function runAll() {
   const children = new Map();
   let shuttingDown = false;
   const restarting = new Set();
-  const port = readCompanionPort(ROOT);
+  const port = readCompanionPort();
   const health = `http://127.0.0.1:${port}/api/health`;
 
   function run(label, args) {

@@ -200,8 +200,8 @@
     hit.addEventListener("pointercancel", endPress);
 
     api?.setBalloon?.(false);
-    let pollMs = 400;
-    let hotMs = 800;
+    const pollMs = 400;
+    const hotMs = 800;
     let pollTimer = null;
     let hotTimer = null;
 
@@ -226,19 +226,8 @@
       hotTimer = setTimeout(hotLoop, hotMs);
     }
 
-    // First poll seeds intervals from env-backed ui payload.
-    (async () => {
-      try {
-        const res = await fetch("/api/pc/ui", { cache: "no-store" });
-        if (res.ok) {
-          const u = await res.json();
-          if (u.ui_poll_ms > 0) pollMs = u.ui_poll_ms;
-          if (u.hot_reload_poll_ms > 0) hotMs = u.hot_reload_poll_ms;
-        }
-      } catch { /* use defaults until server up */ }
-      pollLoop();
-      hotLoop();
-    })();
+    pollLoop();
+    hotLoop();
     requestAnimationFrame(frame);
   </script>
 </body>

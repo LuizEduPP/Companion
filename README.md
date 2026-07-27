@@ -2,7 +2,7 @@
 
 Projeto standalone em `projects/032-companion` (git próprio).
 
-Presence luminosa no PC: captura atividade do desktop (foco, páginas, arquivos, digitação após idle, clipboard, a11y), lembra em `memory.json`, pergunta no balão. Sem tipado no orb. Sem screenshot.
+Presence luminosa no PC: captura atividade do desktop (foco, páginas, arquivos, digitação via a11y, clipboard), lembra em `memory.json`, fala no balão. Sistema **agentico** — o modelo decide `silence` / `speak` / `learn`; o JS só orquestra I/O e aplica a decisão. Único gate mecânico: fingerprint igual (não chama o modelo de novo).
 
 Alvo: **Linux, Windows e macOS** (Node ≥20 + Electron).
 
@@ -16,30 +16,35 @@ sense (adapters) ──► companion :8770 ──► orb overlay
 
 ```bash
 cd companion
-cp .env.example .env
+cp .env.example .env   # só OPENAI_*
 yarn install
-yarn start               # = node run.mjs  (brain + sense + orb)
+yarn start             # = node run.mjs  (brain + sense + orb)
+node run.mjs --hot     # hot reload (opcional)
 ```
 
 Entrada: `run.mjs` (`all` | `brain` | `sense` | `orb` | `electron-ensure`).
+
+## Env (só wiring LLM)
+
+```bash
+OPENAI_BASE_URL=http://127.0.0.1:1234/v1
+OPENAI_API_KEY=
+OPENAI_CHAT_MODEL=…
+```
+
+Sem knobs de comportamento, thresholds ou regex de política no `.env`.
 
 ## O que captura (activity stream)
 
 | Canal | Linux | Windows | macOS |
 |-------|--------|---------|-------|
 | Focus | KWin script + `/proc` + AT-SPI | GetForegroundWindow | System Events |
-| Pages | URL no título | URL no título | URL no título |
-| Files | título + `/proc/<pid>/fd` + watch dirs | título + watch | título + watch |
-| Windows | KWin window list | — | System Events |
-| Typed | valor a11y do foco → flush após idle | UI Automation Value → idle | AX value → idle |
-| Selection | AT-SPI selection + primary (`wl-paste --primary`) | TextPattern selection | — |
-| Idle | loginctl IdleHint + quiet tracker | GetLastInputInfo | HIDIdleTime |
-| Clipboard | wl-paste / xclip | Clipboard.GetText | pbpaste |
-| A11y | AT-SPI (python3+gi) | UI Automation | System Events |
+| Pages / files | URL/path no título | idem | idem |
+| Typed | valor a11y do foco | UI Automation | AX value |
+| Selection / clipboard | AT-SPI + primary / wl-paste | TextPattern / Clipboard | pbpaste |
+| Idle | loginctl + quiet tracker | GetLastInputInfo | HIDIdleTime |
 
 **Nunca:** `org.kde.KWin.queryWindowInfo` (rouba mouse), screenshot region.
-
-Digitação: buffer local; envia o texto **integral** após `COMPANION_TYPE_IDLE_MS` (default 2.5s). Campos password (quando detectáveis) são ignorados. Tokens óbvios são redacted.
 
 ## APIs
 
@@ -47,30 +52,16 @@ Digitação: buffer local; envia o texto **integral** após `COMPANION_TYPE_IDLE
 |--------|------|-----|
 | GET | `/api/pc/ui` | orb + balão |
 | GET | `/api/health` | health + brain status |
-| POST | `/api/pc/activity` | stream completo (focus/page/file/typed/…) |
+| POST | `/api/pc/activity` | stream completo |
 | POST | `/api/pc/nudge` | toque no orb |
 
 ## Data
 
 `data/memory.json` — `user`, `knows`, `episodes`.
 
-## Envs de captura
-
-```bash
-COMPANION_CAPTURE_ALL=1          # master (default on)
-COMPANION_CAPTURE_TYPED=1
-COMPANION_CAPTURE_CLIPBOARD=1
-COMPANION_CAPTURE_A11Y=1
-COMPANION_CAPTURE_FILES=1
-COMPANION_CAPTURE_BROWSER=1
-COMPANION_TYPE_IDLE_MS=2500
-COMPANION_TYPE_MAX_CHARS=16000
-COMPANION_WATCH_DIRS=            # dirs extras separados por ,:; 
-```
-
 ## Código
 
-- `lib/sense.mjs` — orquestra
+- `lib/sense.mjs` — orquestra sensores (raw)
 - `lib/sense/{linux,win32,darwin}.mjs` — adapters
-- `lib/sense/infer.mjs` — URL/arquivo/kind estrutural
 - `lib/brain.mjs` / `lib/store.mjs` — activity → memória + turns
+- `prompts/companion.md` — política / filtro / anti-loop (no modelo)
