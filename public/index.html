@@ -118,6 +118,16 @@
         const res = await fetch("/api/pc/ui", { cache: "no-store" });
         if (!res.ok) return;
         const u = await res.json();
+        if (u.orb_size?.width && u.orb_size?.height) {
+          document.documentElement.style.setProperty(
+            "--orb-w",
+            `${u.orb_size.width}px`,
+          );
+          document.documentElement.style.setProperty(
+            "--orb-h",
+            `${u.orb_size.height}px`,
+          );
+        }
         const emotion = u.emotion || "idle";
         if (emotion !== lastEmotion) {
           lastEmotion = emotion;

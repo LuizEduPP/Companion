@@ -20,7 +20,7 @@ import { arch, homedir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createRequire } from "node:module";
-import { envFlag, ORB, orbTitle } from "./lib/sense/util.mjs";
+import { envFlag, requireFlag } from "./lib/sense/util.mjs";
 
 const ROOT = dirname(fileURLToPath(import.meta.url));
 const SELF = join(ROOT, "run.mjs");
@@ -32,7 +32,11 @@ const isMac = process.platform === "darwin";
 /* ─── hot reload helpers ─── */
 
 function hotEnabled() {
-  return envFlag("COMPANION_HOT_RELOAD", true);
+  // Soft path before full config: if unset, treat as on only when .env not loaded yet.
+  if (process.env.COMPANION_HOT_RELOAD === undefined || process.env.COMPANION_HOT_RELOAD === "") {
+    return envFlag("COMPANION_HOT_RELOAD", true);
+  }
+  return requireFlag("COMPANION_HOT_RELOAD");
 }
 
 function shouldSkip(name) {
@@ -291,7 +295,8 @@ async function runSense() {
 
 /* ─── orb launcher (node → electron) ─── */
 
-function runOrbLauncher() {
+async function runOrbLauncher() {
+  const { config } = await import("./lib/config.mjs");
   let electronPath = resolveElectron();
   if (!electronPath) {
     console.log("companion: repairing electron…");
@@ -311,7 +316,7 @@ function runOrbLauncher() {
   // Wayland: setIgnoreMouseEvents + cursor hit-test is unreliable (scale /
   // forward). X11 ozone restores click, drag, and click-through.
   const orbArgs = ["--enable-transparent-visuals"];
-  if (process.platform === "linux" && envFlag("COMPANION_ORB_X11", true)) {
+  if (process.platform === "linux" && config.orbX11) {
     orbArgs.push("--ozone-platform=x11");
   }
   orbArgs.push(SELF);
@@ -327,16 +332,16 @@ function runOrbLauncher() {
 
 async function runOrbMain() {
   const { app, BrowserWindow, screen, ipcMain } = await import("electron");
-  const { readCompanionPort } = await import("./lib/config.mjs");
+  const { config, readCompanionPort } = await import("./lib/config.mjs");
 
   app.commandLine.appendSwitch("enable-transparent-visuals");
 
   const PORT = readCompanionPort(ROOT);
   const URL = `http://127.0.0.1:${PORT}/`;
-  const ORB_W = ORB.width;
-  const ORB_H = ORB.height;
-  const BALLOON_H = ORB.balloonHeight;
-  const title = orbTitle();
+  const ORB_W = config.orb.width;
+  const ORB_H = config.orb.height;
+  const BALLOON_H = config.orb.balloonHeight;
+  const title = config.orbTitle;
 
   function cursorInWindowSpace(win, point) {
     // Match cursor + window bounds in DIP space when fractional scale differs.
@@ -373,7 +378,7 @@ async function runOrbMain() {
     // Linux/XWayland: setIgnoreMouseEvents + transparent pixels often drop
     // all input (can't drag / can't nudge). Keep the window fully interactive.
     const clickThrough =
-      process.platform !== "linux" && envFlag("COMPANION_ORB_CLICK_THROUGH", true);
+      process.platform !== "linux" && config.orbClickThrough;
     console.log(
       `[orb] size=${ORB_W}x${ORB_H} platform=${process.platform} ozone=${ozone} clickThrough=${clickThrough}`,
     );
@@ -770,7 +775,7 @@ if (process.versions.electron) {
   const cmd = process.argv[2] || "all";
   if (cmd === "electron-ensure" || cmd === "postinstall") ensureElectron();
   else if (cmd === "sense") await runSense();
-  else if (cmd === "orb") runOrbLauncher();
+  else if (cmd === "orb") await runOrbLauncher();
   else if (cmd === "brain" || cmd === "start") await runBrain();
   else if (cmd === "all") await runAll();
   else {
