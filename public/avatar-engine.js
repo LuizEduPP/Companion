@@ -160,17 +160,16 @@ const EMOTIONS = {
         mouth_open: 0, mouth_smile: 1, mouth_wide: 0,
         eyes: "crescent", mouth: "smile", brows: "none", blush: 0.2,
         loop(t, p) {
-          const bounce = 0.5 + 0.5 * Math.sin(t * 2.4) + 0.15 * Math.sin(t * 3.7 + 0.5);
-          const b = Math.max(0, bounce) * 0.55;
-          const sway = Math.sin(t * 1.7);
-          p.squash = -0.12 - b * 0.16;
-          p.glow = 0.88 + b * 0.12;
-          p.energy = 0.75 + b * 0.28;
-          p.mouth_smile = 0.88 + b * 0.1;
-          p.look_x = sway * 0.16;
-          p.look_y = -0.02 + b * 0.05;
-          p.blush = 0.12 + b * 0.16;
-          p.hue = 38 + b * 10;
+          // warm glow — no bounce
+          const pulse = (Math.sin(t * 1.2) + 1) / 2;
+          p.squash = -0.18 - pulse * 0.04;
+          p.glow = 0.9 + pulse * 0.08;
+          p.energy = 0.82 + pulse * 0.08;
+          p.mouth_smile = 0.92;
+          p.look_x = Math.sin(t * 0.6) * 0.06;
+          p.look_y = -0.02;
+          p.blush = 0.14 + pulse * 0.06;
+          p.hue = 40 + pulse * 4;
         },
       },
       laugh: {
@@ -201,18 +200,17 @@ const EMOTIONS = {
         mouth_open: 0.45, mouth_smile: 0.8, mouth_wide: 0.1,
         eyes: "soft", mouth: "laugh", brows: "raise", blush: 0.15,
         loop(t, p) {
-          // soft uneven bounce — organic, not metronome
-          const hop = 0.55 + 0.45 * Math.sin(t * 2.8) + 0.2 * Math.sin(t * 4.1 + 0.7);
-          const bounce = Math.max(0, hop) * 0.55;
-          p.squash = 0.04 + bounce * 0.28 + Math.sin(t * 1.6) * 0.04;
-          p.mouth_open = 0.35 + bounce * 0.35 + Math.sin(t * 3.3) * 0.06;
-          p.mouth_wide = 0.08 + bounce * 0.1;
-          p.energy = 0.9 + bounce * 0.28;
-          p.glow = 0.88 + bounce * 0.12;
-          p.look_x = Math.sin(t * 1.35) * 0.14 + Math.sin(t * 2.4) * 0.05;
-          p.look_y = -0.1 + bounce * 0.08;
-          p.hue = 42 + bounce * 10;
-          p.blush = 0.12 + bounce * 0.14;
+          // bright alert — no hop/bounce
+          const pulse = (Math.sin(t * 1.5) + 1) / 2;
+          p.squash = 0.1 + pulse * 0.06;
+          p.mouth_open = 0.4 + pulse * 0.08;
+          p.mouth_wide = 0.1;
+          p.energy = 0.95 + pulse * 0.08;
+          p.glow = 0.9 + pulse * 0.08;
+          p.look_x = Math.sin(t * 0.9) * 0.08;
+          p.look_y = -0.08;
+          p.hue = 44 + pulse * 4;
+          p.blush = 0.12 + pulse * 0.06;
         },
       },
       wink: {
@@ -298,19 +296,17 @@ const EMOTIONS = {
         mouth_open: 0.08, mouth_smile: 0.1, mouth_wide: 0.35,
         eyes: "soft", mouth: "O", brows: "quirk", blush: 0,
         loop(t, p) {
-          // investigate: dart look, lean in, tiny “ooh”
-          const dart = Math.sin(t * 1.4);
-          const lean = (Math.sin(t * 2.1) + 1) / 2;
-          const notice = Math.pow(Math.max(0, Math.sin(t * 0.85)), 10);
-          p.look_x = 0.35 + dart * 0.45 + notice * 0.15;
-          p.look_y = -0.12 + Math.sin(t * 1.7) * 0.12 - notice * 0.08;
-          p.squash = 0.1 + lean * 0.18 + notice * 0.12;
-          p.energy = 0.75 + lean * 0.25 + notice * 0.2;
-          p.glow = 0.72 + lean * 0.18 + notice * 0.15;
-          p.mouth_wide = 0.28 + lean * 0.2 + notice * 0.25;
-          p.hue = 44 + lean * 10;
-          if (Math.sin(t * 0.5) > 0.94) { p.eye_l = 0.12; p.eye_r = 0.12; }
-
+          // investigate: soft glance — no frantic squash
+          const dart = Math.sin(t * 0.9);
+          const lean = (Math.sin(t * 1.2) + 1) / 2;
+          p.look_x = 0.35 + dart * 0.2;
+          p.look_y = -0.12 + Math.sin(t * 0.8) * 0.06;
+          p.squash = 0.12 + lean * 0.06;
+          p.energy = 0.78 + lean * 0.08;
+          p.glow = 0.75 + lean * 0.1;
+          p.mouth_wide = 0.3 + lean * 0.08;
+          p.hue = 46 + lean * 4;
+          if (Math.sin(t * 0.45) > 0.96) { p.eye_l = 0.12; p.eye_r = 0.12; }
         },
       },
 
@@ -925,10 +921,8 @@ export function createAvatarController({ bloom, body, face, orbRoot, j0, j1, j2 
     if (live.brows) pose.brows = live.brows;
 
     const mood = pose.energy ?? 0.8;
-    const bob = Math.sin(t * (0.9 + mood * 0.6)) * (2.8 + mood * 2.2);
-    const sway = Math.sin(t * 0.75) * (1.1 + mood * 1.0);
-    const rot = Math.sin(t * 0.55) * (1.4 + mood * 1.4);
-    orbRoot.setAttribute("transform", `translate(${sway} ${bob}) rotate(${rot} 160 112)`);
+    // Stable presence — no bounce/hop transform (squash/face carry mood).
+    orbRoot.setAttribute("transform", "translate(0 0)");
 
     const cx = 160;
     const cy = 112;
