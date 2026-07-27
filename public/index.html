@@ -10,6 +10,7 @@
       --ink: #1a1008;
       --orb-w: 240px;
       --orb-h: 180px;
+      --balloon-h: 120px;
     }
     * { box-sizing: border-box; margin: 0; padding: 0; }
     html, body {
@@ -35,7 +36,7 @@
     .balloon {
       flex: 0 0 auto;
       margin: 0 8px 2px;
-      max-height: 68px;
+      max-height: var(--balloon-h);
       padding: 0.4rem 0.55rem;
       border-radius: 12px;
       background: rgba(255, 248, 238, 0.94);
@@ -47,7 +48,9 @@
       display: none;
       pointer-events: auto;
       cursor: default;
-      overflow: hidden;
+      overflow-x: hidden;
+      overflow-y: auto;
+      word-break: break-word;
     }
     .balloon.show { display: block; }
     /* Room for glow + zzzz/?/sweat — click circle via Electron hit-test */
@@ -126,6 +129,12 @@
           document.documentElement.style.setProperty(
             "--orb-h",
             `${u.orb_size.height}px`,
+          );
+        }
+        if (u.orb_size?.balloon_height) {
+          document.documentElement.style.setProperty(
+            "--balloon-h",
+            `${u.orb_size.balloon_height}px`,
           );
         }
         const emotion = u.emotion || "idle";
