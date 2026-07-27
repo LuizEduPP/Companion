@@ -134,22 +134,22 @@ const EMOTIONS = {
       },
       focused: {
         label: "focused",
-        hue: 205, glow: 0.58, squash: 0.14, energy: 0.78,
-        look_x: 0, look_y: -0.1, eye_l: 1, eye_r: 1, brow_l: -0.3, brow_r: -0.3,
-        mouth_open: 0, mouth_smile: 0.05, mouth_wide: 0,
-        eyes: "soft", mouth: "flat", brows: "angry", blush: 0,
+        hue: 205, glow: 0.62, squash: 0.1, energy: 0.8,
+        look_x: 0, look_y: -0.06, eye_l: 1, eye_r: 1, brow_l: 0.12, brow_r: 0.12,
+        mouth_open: 0, mouth_smile: 0.18, mouth_wide: 0,
+        eyes: "soft", mouth: "flat", brows: "none", blush: 0,
         loop(t, p) {
-          // locked stare with tiny scan + concentration pulse
-          const lock = (Math.sin(t * 2.2) + 1) / 2;
-          const scan = Math.sin(t * 3.6);
-          p.look_x = scan * 0.12;
-          p.look_y = -0.14 + Math.sin(t * 1.8) * 0.05;
-          p.squash = 0.08 + lock * 0.16 + Math.sin(t * 4.5) * 0.04;
-          p.glow = 0.45 + lock * 0.22;
-          p.energy = 0.65 + lock * 0.28;
-          p.hue = 200 + lock * 14;
-          if (Math.sin(t * 0.9) > 0.96) { p.eye_l = 0.18; p.eye_r = 0.18; }
-
+          // calm locked attention — not angry brows
+          const lock = (Math.sin(t * 2.0) + 1) / 2;
+          const scan = Math.sin(t * 2.8);
+          p.look_x = scan * 0.1;
+          p.look_y = -0.08 + Math.sin(t * 1.6) * 0.04;
+          p.squash = 0.06 + lock * 0.1 + Math.sin(t * 3.8) * 0.03;
+          p.glow = 0.52 + lock * 0.18;
+          p.energy = 0.7 + lock * 0.2;
+          p.hue = 200 + lock * 12;
+          p.mouth_smile = 0.14 + lock * 0.08;
+          if (Math.sin(t * 0.85) > 0.96) { p.eye_l = 0.2; p.eye_r = 0.2; }
         },
       },
 
