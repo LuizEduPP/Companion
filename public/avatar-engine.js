@@ -863,9 +863,9 @@ export function createAvatarController({ bloom, body, face, orbRoot, j0, j1, j2 
     const t = now / 1000;
     const local = t - emotionSince;
     const e = EMOTIONS[active] || EMOTIONS.idle;
-    // Slow, continuous morph (was ~1.85× — felt abrupt).
-    const ease = 1 - Math.exp(-1.15 * (1 / 60));
-    faceBlend = Math.min(1, faceBlend + 1 / 60 / 0.85);
+    // Slow morph toward new emotion (~2.4s face crossfade).
+    const ease = 1 - Math.exp(-0.42 * (1 / 60));
+    faceBlend = Math.min(1, faceBlend + 1 / 60 / 2.4);
 
     for (const k of KEYS) {
       if (k === "eye_l" || k === "eye_r") continue;
@@ -878,8 +878,8 @@ export function createAvatarController({ bloom, body, face, orbRoot, j0, j1, j2 
     pose.ask = lerp(pose.ask ?? 0, target.ask ?? 0, ease);
     pose.sweat = lerp(pose.sweat ?? 0, target.sweat ?? 0, ease);
 
-    // Discrete face parts crossfade after the body has started moving.
-    if (faceBlend < 0.4) {
+    // Discrete face parts swap late in the morph.
+    if (faceBlend < 0.55) {
       pose.eyes = fromFace.eyes;
       pose.mouth = fromFace.mouth;
       pose.brows = fromFace.brows;
@@ -902,21 +902,24 @@ export function createAvatarController({ bloom, body, face, orbRoot, j0, j1, j2 
     live.eye_r = target.eye_r ?? 1;
     if (e.loop) e.loop(local, live);
 
+    // During morph, damp loop so the new emotion doesn't snap in.
+    const loopMix = 0.06 + faceBlend * 0.1;
+    const hueMix = 0.05 + faceBlend * 0.06;
     for (const k of KEYS) {
       if (k === "eye_l" || k === "eye_r") continue;
-      pose[k] = lerp(pose[k], live[k], k === "hue" ? 0.14 : 0.22);
+      pose[k] = lerp(pose[k], live[k], k === "hue" ? hueMix : loopMix);
     }
     for (const k of ["eye_l", "eye_r"]) {
       const want = live[k];
       const closing = want < 0.35 || pose[k] < 0.35;
-      pose[k] = lerp(pose[k], want, closing ? 0.55 : 0.22);
+      pose[k] = lerp(pose[k], want, closing ? 0.35 : loopMix);
     }
-    pose.energy = lerp(pose.energy, live.energy ?? pose.energy, 0.22);
-    pose.blush = lerp(pose.blush ?? 0, live.blush ?? 0, 0.22);
-    pose.tear = lerp(pose.tear ?? 0, live.tear ?? 0, 0.22);
-    pose.zzz = lerp(pose.zzz ?? 0, live.zzz ?? 0, 0.22);
-    pose.ask = lerp(pose.ask ?? 0, live.ask ?? 0, 0.22);
-    pose.sweat = lerp(pose.sweat ?? 0, live.sweat ?? 0, 0.22);
+    pose.energy = lerp(pose.energy, live.energy ?? pose.energy, loopMix);
+    pose.blush = lerp(pose.blush ?? 0, live.blush ?? 0, loopMix);
+    pose.tear = lerp(pose.tear ?? 0, live.tear ?? 0, loopMix);
+    pose.zzz = lerp(pose.zzz ?? 0, live.zzz ?? 0, loopMix);
+    pose.ask = lerp(pose.ask ?? 0, live.ask ?? 0, loopMix);
+    pose.sweat = lerp(pose.sweat ?? 0, live.sweat ?? 0, loopMix);
     if (live.mouth) pose.mouth = live.mouth;
     if (live.eyes) pose.eyes = live.eyes;
     if (live.brows) pose.brows = live.brows;
