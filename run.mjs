@@ -336,6 +336,7 @@ async function runOrbMain() {
   const ORB_W = ORB.width;
   const ORB_H = ORB.height;
   const BALLOON_H = ORB.balloonHeight;
+  const TOTAL_H = ORB_H + BALLOON_H;
   const title = ORB.title;
 
   function cursorInWindowSpace(win, point) {
@@ -374,25 +375,18 @@ async function runOrbMain() {
     // all input (can't drag / can't nudge). Keep the window fully interactive.
     const clickThrough = process.platform !== "linux";
     console.log(
-      `[orb] size=${ORB_W}x${ORB_H} platform=${process.platform} ozone=${ozone} clickThrough=${clickThrough}`,
+      `[orb] size=${ORB_W}x${TOTAL_H} (orb ${ORB_H}+balloon ${BALLOON_H}) platform=${process.platform} ozone=${ozone} clickThrough=${clickThrough}`,
     );
     const display = screen.getPrimaryDisplay().workArea;
     let balloonOpen = false;
     let dragging = false;
     let lastIgnore = null;
 
-    function winSize() {
-      return balloonOpen
-        ? { w: ORB_W, h: ORB_H + BALLOON_H }
-        : { w: ORB_W, h: ORB_H };
-    }
-
-    const { w, h } = winSize();
     const win = new BrowserWindow({
-      width: w,
-      height: h,
-      x: display.x + display.width - w - 24,
-      y: display.y + display.height - h - 24,
+      width: ORB_W,
+      height: TOTAL_H,
+      x: display.x + display.width - ORB_W - 24,
+      y: display.y + display.height - TOTAL_H - 24,
       frame: false,
       transparent: true,
       hasShadow: false,
@@ -419,18 +413,6 @@ async function runOrbMain() {
     win.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
     // Ensure Linux starts accepting input (never begin in ignore=true).
     win.setIgnoreMouseEvents(false);
-
-    function applySize(anchorBottomRight = true) {
-      const size = winSize();
-      const [x, y] = win.getPosition();
-      const [, oldH] = win.getSize();
-      win.setBounds({
-        x,
-        y: anchorBottomRight ? y + (oldH - size.h) : y,
-        width: size.w,
-        height: size.h,
-      });
-    }
 
     function syncMousePassThrough() {
       if (!clickThrough || win.isDestroyed() || dragging) return;
@@ -476,10 +458,7 @@ async function runOrbMain() {
     }
 
     ipcMain.on("orb:balloon", (_e, open) => {
-      const next = Boolean(open);
-      if (next === balloonOpen) return;
-      balloonOpen = next;
-      applySize(true);
+      balloonOpen = Boolean(open);
     });
 
     ipcMain.on("orb:arm", () => {

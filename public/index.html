@@ -144,9 +144,10 @@
         }
         const balloon = document.getElementById("balloon");
         const text = (u.balloon || "").trim();
-        balloon.textContent = text;
-        balloon.classList.toggle("show", Boolean(text));
-        api?.setBalloon?.(Boolean(text));
+        if (balloon.textContent !== text) balloon.textContent = text;
+        const open = Boolean(text);
+        balloon.classList.toggle("show", open);
+        api?.setBalloon?.(open);
       } catch { /* offline */ }
     }
 
