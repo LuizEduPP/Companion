@@ -29,9 +29,6 @@ const require = createRequire(join(ROOT, "package.json"));
 const isWin = process.platform === "win32";
 const isMac = process.platform === "darwin";
 
-/** Sense OS poll interval — I/O loop, not speech policy. */
-const SENSE_POLL_MS = 1500;
-
 /* ─── hot reload helpers ─── */
 
 function hotEnabled() {
@@ -275,11 +272,19 @@ async function runSense() {
     await postActivity(activity);
   }
 
-  console.log(`companion sense → ${base} every ${SENSE_POLL_MS}ms`);
-  await tick();
-  setInterval(() => {
-    void tick().catch((err) => console.error("[sense]", err.message));
-  }, SENSE_POLL_MS);
+  // Pace = duration of OS capture (self-clocked). No product poll knob.
+  console.log(`companion sense → ${base} (self-paced I/O)`);
+  async function loop() {
+    try {
+      await tick();
+    } catch (err) {
+      console.error("[sense]", err.message);
+    }
+    setImmediate(() => {
+      void loop();
+    });
+  }
+  void loop();
 }
 
 /* ─── orb launcher (node → electron) ─── */
@@ -321,16 +326,17 @@ async function runOrbLauncher() {
 
 async function runOrbMain() {
   const { app, BrowserWindow, screen, ipcMain } = await import("electron");
-  const { config, readCompanionPort } = await import("./lib/config.mjs");
+  const { readCompanionPort } = await import("./lib/config.mjs");
+  const { ORB } = await import("./lib/presentation.mjs");
 
   app.commandLine.appendSwitch("enable-transparent-visuals");
 
   const PORT = readCompanionPort();
   const URL = `http://127.0.0.1:${PORT}/`;
-  const ORB_W = config.orb.width;
-  const ORB_H = config.orb.height;
-  const BALLOON_H = config.orb.balloonHeight;
-  const title = config.orbTitle;
+  const ORB_W = ORB.width;
+  const ORB_H = ORB.height;
+  const BALLOON_H = ORB.balloonHeight;
+  const title = ORB.title;
 
   function cursorInWindowSpace(win, point) {
     // Match cursor + window bounds in DIP space when fractional scale differs.

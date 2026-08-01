@@ -114,7 +114,7 @@
       j2: document.getElementById("j2"),
     });
 
-    let lastEmotion = "idle";
+    let lastFaceJson = "";
 
     async function poll() {
       try {
@@ -137,10 +137,12 @@
             `${u.orb_size.balloon_height}px`,
           );
         }
-        const emotion = u.emotion || "idle";
-        if (emotion !== lastEmotion) {
-          lastEmotion = emotion;
-          avatar.setEmotion(emotion);
+        if (u.face && typeof u.face === "object") {
+          const key = JSON.stringify(u.face);
+          if (key !== lastFaceJson) {
+            lastFaceJson = key;
+            avatar.setFace(u.face);
+          }
         }
         const balloon = document.getElementById("balloon");
         const text = (u.balloon || "").trim();
@@ -200,14 +202,13 @@
     hit.addEventListener("pointercancel", endPress);
 
     api?.setBalloon?.(false);
-    const pollMs = 400;
-    const hotMs = 800;
-    let pollTimer = null;
-    let hotTimer = null;
 
+    // Self-paced with the display frame — presentation I/O, not a product knob.
     async function pollLoop() {
       await poll();
-      pollTimer = setTimeout(pollLoop, pollMs);
+      requestAnimationFrame(() => {
+        void pollLoop();
+      });
     }
 
     // Hot reload: brain bumps /api/health.reload when public/ changes.
@@ -223,11 +224,13 @@
           }
         }
       } catch { /* offline during brain restart */ }
-      hotTimer = setTimeout(hotLoop, hotMs);
+      requestAnimationFrame(() => {
+        void hotLoop();
+      });
     }
 
-    pollLoop();
-    hotLoop();
+    void pollLoop();
+    void hotLoop();
     requestAnimationFrame(frame);
   </script>
 </body>
