@@ -11,8 +11,6 @@ import {
 } from "./lib/brain.mjs";
 
 const HOT = config.hotReload;
-
-/** Bumped when public/ changes so the orb page can location.reload(). */
 let reloadToken = Date.now();
 
 const MIME = {
