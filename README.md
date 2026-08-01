@@ -1,5 +1,7 @@
 # Companion
 
+![Companion](cover.png)
+
 **A luminous presence on your desktop — watches the PC, thinks with your model, speaks when it matters.**
 
 Companion is a local-first desktop organism: sensors read what you are doing, an OpenAI-compatible model decides what to feel and say, and a small jelly orb lives in an always-on overlay. No chat box. No cloud backend. Your endpoint, your memory, your machine.
