@@ -1,6 +1,6 @@
 # Plano: Companion como organismo agentico
 
-> Norte do projeto: [`AGENTS.md`](./AGENTS.md) — só host / porta / endpoint / model; turns event-driven; constitution = identidade+schema; sem caps de mente/mãos/tick.
+> Norte do projeto: [`AGENTS.md`](./AGENTS.md) — só host / porta / endpoint / model; turns event-driven; constitution = identidade + keys; `face` paramétrico (layout host, canais do modelo); sem caps de mente/mãos/tick.
 
 Meta: presença desktop **autônoma** — loop contínuo sense → decide → act → remember → intend — com **zero política de comportamento no runtime**. Código = plumbing. Modelo + memória = agência. Sem thresholds de fala, sem árvores if/else de “quando comentar”, sem painéis de config.
 
@@ -24,7 +24,7 @@ Não-meta: mais knobs (`idle_ms`, noise scores, taxonomias de app, horários). C
 | Existe | Falta |
 |--------|--------|
 | Sense multi-OS → POST activity | — |
-| Loop tick + speak / emotion / learn / actions / intent | — |
+| Turns event-driven + speak / face / learn / actions / intent | — |
 | Store + recall tools (sem dump de episodes) | — |
 | Tools + constitution curta | — |
 | Orb: caption + nudge | — |
@@ -42,7 +42,7 @@ Fluxo: `sense ⇄ decide ⇄ act ⇄ tool_results ⇄ intend` (organismo)
 - [x] Documentar neste plano a regra: política só no prompt/memória; novos PRs não adicionam thresholds de fala/idle/noise no `brain`/`sense`.
 - [x] Inventário rápido do que é **fio** (OK) vs **política** (remover depois):
   - Fio: `IO.*` (buffers OS), bind, Electron hit-test, sense self-paced.
-  - Política no prompt/tick/caps: **removida** no alinhamento AGENTS (constitution = identidade+schema; turns event-driven).
+  - Política no prompt/tick/caps: **removida** no alinhamento AGENTS (constitution = identidade+keys; turns event-driven; face paramétrico).
 - [x] Critério de aceite: qualquer feature nova de comportamento passa pelo modelo ou pela memória, não por `if` no runtime.
 
 **Entrega:** consenso (aceite Luiz) + este arquivo como norte.

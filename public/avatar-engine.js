@@ -1,7 +1,8 @@
 /**
- * Continuous parametric avatar — every trait is a number from the model.
- * No style enums / named emotions.
+ * Parametric orb face — classic jelly layout.
+ * Model drives every channel. Host only morphs/renders numbers — no invented motion.
  */
+
 const NS = "http://www.w3.org/2000/svg";
 
 const KEYS = [
@@ -34,6 +35,7 @@ const KEYS = [
   "sweat",
 ];
 
+/** Must match lib/avatar.mjs DEFAULT_FACE. */
 const DEFAULT_FACE = {
   look_x: 0,
   look_y: 0.02,
@@ -67,14 +69,16 @@ const DEFAULT_FACE = {
 const hsl = (h, s, l, a = 1) => `hsla(${h},${s}%,${l}%,${a})`;
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 const lerp = (a, b, t) => a + (b - a) * t;
-const el = (name, attrs = {}) => {
+
+function el(name, attrs = {}) {
   const n = document.createElementNS(NS, name);
   for (const [k, v] of Object.entries(attrs)) n.setAttribute(k, String(v));
   return n;
-};
-const clear = (n) => {
+}
+
+function clear(n) {
   while (n.firstChild) n.removeChild(n.firstChild);
-};
+}
 
 function blobPath(cx, cy, rx, ry, t, energy, squash) {
   const n = 36;
@@ -201,7 +205,6 @@ function drawFace(g, s, cx, cy, rx, ry, t = 0) {
     const outer = side === "L" ? ex - half : ex + half;
     const inner = side === "L" ? ex + half : ex - half;
     const liftPx = lift * 8;
-    // tilt: -1 inner down (angry), +1 outer down (sad)
     const yO = ey - 13 - liftPx + tilt * (side === "L" ? 4 : -4);
     const yI = ey - 13 - liftPx - tilt * (side === "L" ? 4 : -4);
     const ctrlY = (yO + yI) / 2 - 2 - liftPx * 0.3;
@@ -235,7 +238,6 @@ function drawFace(g, s, cx, cy, rx, ry, t = 0) {
       if (heart > 0.85) return;
     }
 
-    // curve > 0 → crescent; curve < 0 → heavy/line; ~0 → round
     if (curve > 0.35 || (open < 0.35 && curve >= 0)) {
       const arch = 8.5 + curve * 2;
       g.appendChild(
@@ -348,7 +350,6 @@ function drawFace(g, s, cx, cy, rx, ry, t = 0) {
     return;
   }
 
-  // closed mouth curve from smile (-1 frown … +1 smile)
   const half = 9 + Math.abs(smile) * 6 + wide * 4;
   const bend = smile * 10;
   if (Math.abs(smile) < 0.12) {
@@ -406,10 +407,11 @@ export function createAvatarController({ bloom, body, face, orbRoot, j0, j1, j2 
       ? Math.min(0.05, Math.max(0.001, (now - lastTickMs) / 1000))
       : 1 / 60;
     lastTickMs = now;
-    const t = now / 1000;
     const ease = 1 - Math.exp(-0.42 * dtSec * 60);
     for (const k of KEYS) pose[k] = lerp(pose[k] ?? 0, target[k] ?? 0, ease);
 
+    // Body phase from model energy only — no wall-clock life inventada.
+    const phase = (pose.energy ?? 0) * 2.4;
     orbRoot.setAttribute("transform", "translate(0 0)");
     const cx = 160;
     const cy = 112;
@@ -418,15 +420,17 @@ export function createAvatarController({ bloom, body, face, orbRoot, j0, j1, j2 
     setGrad(pose.hue, pose.sat, pose.light, pose.glow);
     bloom.setAttribute(
       "d",
-      blobPath(cx, cy, baseR * 1.18, baseR * 1.1, t * 0.9, energy * 0.7, pose.squash),
+      blobPath(cx, cy, baseR * 1.18, baseR * 1.1, phase * 0.9, energy * 0.7, pose.squash),
     );
     body.setAttribute(
       "d",
-      blobPath(cx, cy, baseR, baseR * 0.94, t, energy, pose.squash),
+      blobPath(cx, cy, baseR, baseR * 0.94, phase, energy, pose.squash),
     );
     const rx = baseR * (1 - pose.squash * 0.34);
     const ry = baseR * 0.94 * (1 + pose.squash * 0.4);
-    drawFace(face, pose, cx, cy, rx, ry, t);
+    // t for zzz/ask drift = render those channels; amounts still from model.
+    const accentT = (pose.zzz || 0) + (pose.ask || 0) > 0 ? now / 1000 : 0;
+    drawFace(face, pose, cx, cy, rx, ry, accentT);
   }
 
   setFace(DEFAULT_FACE);

@@ -53,7 +53,6 @@
       word-break: break-word;
     }
     .balloon.show { display: block; }
-    /* Room for glow + zzzz/?/sweat — click circle via Electron hit-test */
     .hit {
       width: var(--orb-w);
       height: var(--orb-h);
@@ -79,7 +78,6 @@
   <div class="stage" id="stage">
     <div class="balloon" id="balloon"></div>
     <div class="hit" id="hit" title="arrastar · clique = nudge">
-      <!-- Same stage coords as keeper/cyd/design/avatar-preview.html (320×240). -->
       <svg viewBox="0 0 320 240" xmlns="http://www.w3.org/2000/svg" aria-label="Companion orb">
         <defs>
           <radialGradient id="jelly" cx="36%" cy="30%" r="70%">
@@ -203,7 +201,6 @@
 
     api?.setBalloon?.(false);
 
-    // Self-paced with the display frame — presentation I/O, not a product knob.
     async function pollLoop() {
       await poll();
       requestAnimationFrame(() => {
@@ -211,7 +208,6 @@
       });
     }
 
-    // Hot reload: brain bumps /api/health.reload when public/ changes.
     let reloadToken = null;
     async function hotLoop() {
       try {

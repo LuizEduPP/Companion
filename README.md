@@ -2,7 +2,9 @@
 
 Projeto standalone em `projects/032-companion` (git próprio).
 
-Presence luminosa no PC: captura atividade do desktop (foco, páginas, arquivos, digitação via a11y, clipboard), lembra em `memory.json`, fala no balão. Sistema **agentico** — o modelo decide `silence` / `speak` / `learn`; o JS só orquestra I/O e aplica a decisão. Único gate mecânico: fingerprint igual (não chama o modelo de novo).
+Presence luminosa no PC: captura atividade do desktop (foco, páginas, arquivos, digitação via a11y, clipboard), lembra em `memory.json`, fala no balão. Sistema **agentico** — o modelo decide `silence` / `speak` / `face` / `learn` / `intent` / `actions`; o JS só orquestra I/O e aplica a decisão. Turns event-driven (boot, mudança de sensor, nudge, tool_result, parse_error) — sem fingerprint gate nem timer de produto.
+
+Norte: [`AGENTS.md`](./AGENTS.md). Infra configurável: host, porta, endpoint, model.
 
 Alvo: **Linux, Windows e macOS** (Node ≥20 + Electron).
 
@@ -37,7 +39,7 @@ Sem knobs de comportamento, thresholds ou regex de política no `.env`.
 ## O que captura (activity stream)
 
 | Canal | Linux | Windows | macOS |
-|-------|--------|---------|-------|
+|--------|--------|---------|-------|
 | Focus | KWin script + `/proc` + AT-SPI | GetForegroundWindow | System Events |
 | Pages / files | URL/path no título | idem | idem |
 | Typed | valor a11y do foco | UI Automation | AX value |
@@ -57,11 +59,12 @@ Sem knobs de comportamento, thresholds ou regex de política no `.env`.
 
 ## Data
 
-`data/memory.json` — `user`, `knows`, `episodes`.
+`data/memory.json` — `user`, `knows`, `episodes`, `intent`.
 
 ## Código
 
 - `lib/sense.mjs` — orquestra sensores (raw)
 - `lib/sense/{linux,win32,darwin}.mjs` — adapters
 - `lib/brain.mjs` / `lib/store.mjs` — activity → memória + turns
-- `prompts/companion.md` — política / filtro / anti-loop (no modelo)
+- `lib/avatar.mjs` / `public/avatar-engine.js` — layout orb + `face` paramétrica (canais do modelo)
+- `prompts/companion.md` — identidade + keys do JSON

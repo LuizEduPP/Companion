@@ -4,7 +4,7 @@ Este arquivo explica **como o Companion deve ser entendido e construído**.
 Não é um painel de regras de comportamento. Comportamento emerge do modelo + memória.  
 O único “produto configurável” é ligação de infra: host, porta, endpoint, model.
 
-Identidade falada ao modelo: [`prompts/companion.md`](./prompts/companion.md) (identidade + contrato JSON — sem checklist de quando falar).
+Identidade falada ao modelo: [`prompts/companion.md`](./prompts/companion.md) (identidade + keys do JSON — sem tabela de ranges, sem checklist de quando falar).
 
 ---
 
@@ -39,7 +39,7 @@ Isso pertence ao organismo (modelo + `data/memory.json` + constitution).
 |------|------|--------|
 | **Brain** | `server.mjs` + `lib/brain.mjs` | HTTP local, estado, turns no modelo, aplica decisão |
 | **Sense** | `run.mjs sense` + `lib/sense*.mjs` | Lê o SO e posta activity (ritmo = duração da captura) |
-| **Orb** | Electron + `public/` | Emoção, balão, clique = nudge, arrastar |
+| **Orb** | Electron + `public/` | layout jelly + `face` paramétrico (só números do modelo), balão, nudge |
 
 O sense alimenta o brain. O orb mostra o que o brain decidiu. O brain é o coração do loop.
 
@@ -69,12 +69,12 @@ O sense alimenta o brain. O orb mostra o que o brain decidiu. O brain é o cora�
 ### Passo D — Decidir (modelo)
 
 1. Um objeto JSON: `silence`, `speak`, `face`, `learn`, `intent`, `actions`.
-2. **`face`**: só números contínuos (olhos/brows por lado, curva, heart blend, boca, cor…). **Sem emoções nem enums de estilo** (`raise`/`smile`/…).
+2. **`face`**: números por canal (olho L/R, brow L/R, boca, cor, acentos…). Layout/desenho é do host; o modelo controla todos os detalhes. Sem emoções nomeadas nem SVG livre. `null` mantém.
 3. JSON inválido/cortado: runtime **não conserta** e **não inventa** fala. Observação `last_parse_error` + sinal `parse_error`.
 
 ### Passo E — Expressar (orb)
 
-1. Fala → balão. `face` → avatar (morph). Silêncio: caption pode ficar; face atualiza se enviada.
+1. Fala → balão. Face/boca/cor/vida = só canais do modelo; host só desenha.
 2. Clique = nudge (sinal), não chat.
 
 ### Passo F — Agir (mãos)
@@ -106,7 +106,7 @@ observar → (sinal) → situar → decidir → expressar / agir → lembrar / q
 
 ### Modelo
 - Pode: filtrar, calar, falar, aprender, intent, tools.
-- Constitution: identidade + schema — não regulamento de frequência.
+- Constitution: identidade + keys do JSON — não tabela de ranges nem regulamento de frequência.
 
 ### Store
 - `user`, `knows`, `episodes`, `intent` — hábitos aqui, não no `.env`.
@@ -129,6 +129,7 @@ observar → (sinal) → situar → decidir → expressar / agir → lembrar / q
 | Coisa | Onde | Por quê |
 |-------|------|---------|
 | Geometria do orb | `lib/presentation.mjs` + CSS fallback | pixels da janela, não personalidade |
+| Layout jelly + face | `public/avatar-engine.js` + `lib/avatar.mjs` | desenho fixo; todo movimento/expressão = canais do modelo |
 | Buffers de captura OS | `lib/sense/util.mjs` → `IO.*` | tamanho de string do SO |
 | Ritmo do sense | duração de `collectActivity` | I/O auto-clock |
 | Ritmo do UI poll | `requestAnimationFrame` | frame do display |
@@ -158,9 +159,9 @@ observar → (sinal) → situar → decidir → expressar / agir → lembrar / q
 | `lib/sense*.mjs` | olhos |
 | `lib/store.mjs` | memória |
 | `lib/tools.mjs` | mãos |
-| `lib/avatar.mjs` | schema/normalize do `face` |
-| `prompts/companion.md` | identidade + schema |
-| `public/avatar-engine.js` | render paramétrico |
+| `lib/avatar.mjs` | canais / normalize do `face` |
+| `prompts/companion.md` | identidade + keys do JSON |
+| `public/avatar-engine.js` | layout jelly + face paramétrica |
 | `public/` | cara do orb |
 | `data/memory.json` | memória em disco |
 
