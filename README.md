@@ -24,8 +24,8 @@ Companion is a local-first desktop organism: sensors read what you are doing, an
 ## Install
 
 ```bash
-git clone https://github.com/LuizEduPP/companion.git
-cd companion
+git clone https://github.com/LuizEduPP/Companion.git
+cd Companion
 cp .env.example .env
 yarn
 yarn start

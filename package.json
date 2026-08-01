@@ -8,7 +8,7 @@
   "author": "Luiz Eduardo (LuizEduPP)",
   "repository": {
     "type": "git",
-    "url": "https://github.com/LuizEduPP/companion.git"
+    "url": "https://github.com/LuizEduPP/Companion.git"
   },
   "scripts": {
     "postinstall": "node run.mjs electron-ensure",
