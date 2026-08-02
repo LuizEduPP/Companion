@@ -6,6 +6,8 @@
 
 Companion is a local-first desktop organism: sensors read what you are doing, an OpenAI-compatible model decides what to feel and say, and a small jelly orb lives in an always-on overlay. No chat box. No cloud backend. Your endpoint, your memory, your machine.
 
+![Companion preview](preview.png)
+
 ## Features
 
 - **Desktop sense** — Focus, windows, a11y text, clipboard, selection, open files, idle (Linux / Windows / macOS)
